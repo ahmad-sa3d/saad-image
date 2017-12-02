@@ -10,7 +10,9 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {},
+    "require": {
+        "php": ">=7.0.0",
+    },
     "autoload": {
         "psr-4": {
             "Saad\\Image": "src"
@@ -20,10 +22,7 @@
         "laravel": {
             "providers": [
                 "Saad\\Image\\ImageServiceProvider"
-            ],
-            "aliases": {
-               "SaadImage": "Saad\\Image\\ImageFacade"
-            },
+            ]
         }
     }
 }
