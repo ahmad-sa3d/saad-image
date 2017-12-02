@@ -90,11 +90,11 @@ assume we have a user Model which has image column to store user profile image
 		use EloquentImageSaverTrait, EloquentPublicImageTrait;
 		
 		protected static $profile_image_sizes = [
-        	[ 256, 256 ],  	// Default image size
-        	[ 100, 100 ], 	// Thumbnail
-        	[ 46, 46 ],		// Thumbnail
-        	[ 26, 26 ],		// Thumbnail
-        ];
+	        	[ 256, 256 ],  	// Default image size
+	        	[ 100, 100 ], 	// Thumbnail
+	        	[ 46, 46 ],		// Thumbnail
+	        	[ 26, 26 ],		// Thumbnail
+	        ];
 	
 		/**
 	     * Get Image
@@ -145,6 +145,6 @@ assume we have a user Model which has image column to store user profile image
 	                $this->deleteOldFor( $object->image, $path );
 	            });
 	        }
-    	}
+    		}
     }
 ```
