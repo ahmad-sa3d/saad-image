@@ -95,56 +95,56 @@ assume we have a user Model which has image column to store user profile image
         	[ 46, 46 ],		// Thumbnail
         	[ 26, 26 ],		// Thumbnail
         ];
-	}
 	
-	/**
-     * Get Image
-     * @return String       Image Url
-     */
-    public function getImage()
-    {
-        return $this->getImagePublicLink( 'image', 'images/profiles/' );
-    }
+		/**
+	     * Get Image
+	     * @return String       Image Url
+	     */
+	    public function getImage()
+	    {
+	        return $this->getImagePublicLink( 'image', 'images/profiles/' );
+	    }
 
-    /**
-     * Get Image Thumbnail
-     * @param  String $size Thumbnail size in format '46x46'
-     * @return String       Image Thumbnail Url
-     */
-    public function getImageThumb( $size )
-    {
-        return $this->getImagePublicLink( 'image', 'images/profiles/thumb/', $size );
-    }
-    
-    
-	
-	/**
-     * Mutator To Save and Set Image
-     *
-     * Save Image and create thumbnails, and set image name attribute to model
-     */
-    public function setImageAttribute( $file )
-    {
-        $path = public_path( 'images/profiles/' );        
+	    /**
+	     * Get Image Thumbnail
+	     * @param  String $size Thumbnail size in format '46x46'
+	     * @return String       Image Thumbnail Url
+	     */
+	    public function getImageThumb( $size )
+	    {
+	        return $this->getImagePublicLink( 'image', 'images/profiles/thumb/', $size );
+	    }
+	    
+	    
+		
+		/**
+	     * Mutator To Save and Set Image
+	     *
+	     * Save Image and create thumbnails, and set image name attribute to model
+	     */
+	    public function setImageAttribute( $file )
+	    {
+	        $path = public_path( 'images/profiles/' );        
 
-        if($file instanceof \Illuminate\Http\UploadedFile) {
+	        if($file instanceof \Illuminate\Http\UploadedFile) {
 
-            $this->attributes['image'] = $this->saveImage( $file, $path, null, static::$profile_image_sizes, function( $object, $save_name ) use($path){
-                /**
-                 * Delete Old Images
-                 */
-                $this->deleteOldFor( $object->image, $path );
-                
-            } );
+	            $this->attributes['image'] = $this->saveImage( $file, $path, null, static::$profile_image_sizes, function( $object, $save_name ) use($path){
+	                /**
+	                 * Delete Old Images
+	                 */
+	                $this->deleteOldFor( $object->image, $path );
+	                
+	            } );
 
-        } else {
-            $file = realpath(public_path('/images/temp/'.$file));
-            $this->attributes['image'] = $this->saveLocalImage( $file, $path, null, static::$profile_image_sizes, function( $object, $save_name ) use($path){
-                /**
-                 * Delete Old Images
-                 */
-                $this->deleteOldFor( $object->image, $path );
-            });
-        }
+	        } else {
+	            $file = realpath(public_path('/images/temp/'.$file));
+	            $this->attributes['image'] = $this->saveLocalImage( $file, $path, null, static::$profile_image_sizes, function( $object, $save_name ) use($path){
+	                /**
+	                 * Delete Old Images
+	                 */
+	                $this->deleteOldFor( $object->image, $path );
+	            });
+	        }
+    	}
     }
 ```
