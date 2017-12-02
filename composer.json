@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Saad\\Image": "src"
+            "Saad\\Image\\": "src"
         }
     },
     "extra": {
