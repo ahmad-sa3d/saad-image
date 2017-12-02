@@ -1,0 +1,29 @@
+{
+    "name": "saad/image",
+    "description": "This Package tp deal with images crop, resize, write text, integrate with Eloquent Midel to get and save inmages with different sizes'",
+    "type": "library, laravel",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ahmed Saad",
+            "email": "a7mad.sa3d.2014@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Saad\\Image": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Saad\\Image\\ImageServiceProvider"
+            ],
+            "aliases": {
+               "SaadImage": "Saad\\Image\\ImageFacade"
+            },
+        }
+    }
+}
