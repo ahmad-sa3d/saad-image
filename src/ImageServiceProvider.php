@@ -19,12 +19,12 @@ class ImageServiceProvider extends ServiceProvider
 
 		// Publish Config File
 		$this->publishes([
-			__DIR__ .DS. '..' .DS. 'config' .DS. $this->package_name . '.php' => config_path($this->package_name . '.php'),
+			__DIR__ .DIRECTORY_SEPARATOR. '..' .DIRECTORY_SEPARATOR. 'config' .DIRECTORY_SEPARATOR. $this->package_name . '.php' => config_path($this->package_name . '.php'),
 		], 'config');
 
 		// Publish fonts
 		$this->publishes([
-			__DIR__ .DS. '..' .DS. 'resources' .DS. 'fonts' => resource_path( 'assets' .DS. 'vendor' .DS. $this->package_name .DS. 'fonts'),
+			__DIR__ .DIRECTORY_SEPARATOR. '..' .DIRECTORY_SEPARATOR. 'resources' .DIRECTORY_SEPARATOR. 'fonts' => resource_path('assets' .DIRECTORY_SEPARATOR. 'vendor' .DIRECTORY_SEPARATOR. $this->package_name .DIRECTORY_SEPARATOR. 'fonts'),
 		], 'fonts');
 	}
 
