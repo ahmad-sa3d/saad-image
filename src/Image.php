@@ -27,7 +27,7 @@ class Image
 	protected $_output_format = 'png';
 	protected $_output_options = [];
 
-	protected static $_allowed_formates = [ 'png', 'jpeg', 'jpg', 'gif' ];
+	protected static $_allowed_formates = ['png', 'jpeg', 'jpg', 'gif'];
 
 	public $error;
 
@@ -43,70 +43,73 @@ class Image
 	 * Create Binary 'Resource' image from image file path
 	 * @param string $image_src source 'image file path'
 	 */
-	public function __construct( $image_src = null, $fallback_extension = null )
+	public function __construct($image_src = null, $fallback_extension = null)
 	{
 		# code...
-		if( !file_exists( $image_src ) || !( $this->_image_info = getimagesize( $image_src) ) )
-			throw new ImageException( '__Construct() requires one argument to be an image file path.' );
+		if (!file_exists($image_src) || !($this->_image_info = getimagesize($image_src))) {
+			throw new ImageException('__Construct() requires one argument to be an image file path.');
+		}
 
 		// Set File Fortmates
-		if( ! static::$_allowed_formates )
-			static::$_allowed_formates = Config::get( self::PACKAGE_NAME . '.image.formates' );
+		if (! static::$_allowed_formates) {
+			static::$_allowed_formates = Config::get(self::PACKAGE_NAME . '.image.formates');
+		}
 
 		# here we have an image src and we have it's info stored in image_info array
 		$this->_image_src = $image_src;
 
-		$this->_image_info = array_merge( $this->_image_info, pathinfo( $this->_image_src ) );
+		$this->_image_info = array_merge($this->_image_info, pathinfo($this->_image_src));
 
 		# get orginal extension from mime
-		$this->_image_info['mime_extension'] = str_replace( 'image/', '', $this->_image_info['mime'] );
+		$this->_image_info['mime_extension'] = str_replace('image/', '', $this->_image_info['mime']);
 
 		# And Set default output format
 		// $this->_output_format = $this->_image_info['extension'];
-		if( isset( $this->_image_info['extension'] ) )
+		if (isset($this->_image_info['extension'])) {
 			$this->_output_format = $this->_image_info['extension'];
-		else
-		{
-			if( $fallback_extension )
+		} else {
+			if ($fallback_extension) {
 				$this->_output_format = $fallback_extension;
-			else
-				throw new ImageException( __METHOD__ . ' Couldnot Get Image Extension, Please Provide Extension as the second argument.' );
+			} else {
+				throw new ImageException(__METHOD__ . ' Couldnot Get Image Extension, Please Provide Extension as the second argument.');
+			}
 		}
 
 		// Set Preserve Transparency For PNG
-		// if( $this->_image_info['mime_extension'] == 'png' || $this->_image_info['extension'] == 'png' )
-		if( $this->_output_format == 'png' )
+		// if($this->_image_info['mime_extension'] == 'png' || $this->_image_info['extension'] == 'png')
+		if ($this->_output_format == 'png') {
 			$this->_preserve_transparency = true;
+		}
 
 		# Create Image Binary File From Source File According To Image Type
-		switch( $this->_image_info['mime_extension'] )
-		{
+		switch($this->_image_info['mime_extension']) {
 			case 'jpeg' :
-				$this->_image_resource = imagecreatefromjpeg( $this->_image_src );
+				$this->_image_resource = imagecreatefromjpeg($this->_image_src);
 				break;
 
 			case 'png' :
-				$this->_image_resource = imagecreatefrompng( $this->_image_src );
+				$this->_image_resource = imagecreatefrompng($this->_image_src);
 				break;
 
 			case 'gif' :
-				$this->_image_resource = imagecreatefromgif( $this->_image_src );
+				$this->_image_resource = imagecreatefromgif($this->_image_src);
 				break;
 
 			default:
-				// throw new ImageException( "Couldn't identify image mime-type OR image mime-type not supported"  );
+				// throw new ImageException("Couldn't identify image mime-type OR image mime-type not supported" );
 				# Set Error Beeter than Imageexception
 				$this->error[] = "Couldn't identify image mime-type '{$this->_image_info['mime']}' OR image mime-type not supported.";
 				return false;
 		}
 
 		// Respect Transparency
-		imagealphablending( $this->_image_resource, false );
-		imagesavealpha( $this->_image_resource, true );
+		imagealphablending($this->_image_resource, false);
+		imagesavealpha($this->_image_resource, true);
 
 		# Set Error in case of failing to create a resource'Binary' from sorce image
-		if( !$this->_image_resource )
+		if (!$this->_image_resource) {
 			$this->error[] = "Couldn't create image resource.";
+		}
 
 	}
 
@@ -117,15 +120,14 @@ class Image
 	 * @param  boolean $preserve_aspect get neglected dimension according to originel aspect or set it as the other given dimension
 	 * @return object                   current instance to allow chaining
 	 */
-	public function createThumbnail( $thumb_width = null, $thumb_height = null, $preserve_aspect = false )
-	{
-		#	Create Thumbnail
+	public function createThumbnail($thumb_width = null, $thumb_height = null, $preserve_aspect = false) {
+		if ((is_numeric($thumb_width) && $thumb_width <= 0) || (is_numeric($thumb_height) && $thumb_height <= 0)) {
+			throw new ImageException(__METHOD__ . ' require width or height to be non negative numbers or zero.');
+		}
 
-		if( ( is_numeric( $thumb_width ) && $thumb_width <= 0 ) || ( is_numeric( $thumb_height ) && $thumb_height <= 0 ) )
-			throw new ImageException( __METHOD__ . ' require width or height to be non negative numbers or zero.' );
-
-		if( !$thumb_width && !$thumb_height )
-			throw new ImageException( __METHOD__ . ' require at least width or height.' );
+		if (!$thumb_width && !$thumb_height) {
+			throw new ImageException(__METHOD__ . ' require at least width or height.');
+		}
 
 
 		# -1
@@ -141,34 +143,31 @@ class Image
 
 
 		// Verify Given dimensions
-		if( $thumb_width && !$thumb_height )
+		if ($thumb_width && !$thumb_height) {
 			// No Height
-			$thumb_height = ( $preserve_aspect ) ? $thumb_width / $this->_image_info['aspect'] : $thumb_width;
-
-		else if( !$thumb_width && $thumb_height )
+			$thumb_height = ($preserve_aspect) ? $thumb_width / $this->_image_info['aspect'] : $thumb_width;
+		} else if (!$thumb_width && $thumb_height) {
 			// no width given
-			$thumb_width = ( $preserve_aspect ) ? $thumb_height * $this->_image_info['aspect'] : $thumb_height;
-
+			$thumb_width = ($preserve_aspect) ? $thumb_height * $this->_image_info['aspect'] : $thumb_height;
+		}
 
 		// Then Get Thumbnail Aspect
 		$thumb_aspect = $thumb_width / $thumb_height;
 
-
 		# -2
 		# Create Thumbnail empty resource
-		$thumb = imagecreatetruecolor( $thumb_width, $thumb_height );
+		$thumb = imagecreatetruecolor($thumb_width, $thumb_height);
 
 		// Fill Default White Color
-		$bg = imagecolorallocate( $thumb, 255, 255, 255 );
-		// imagefill( $thumb, 0, 0, $bg );
-		imagefilledrectangle( $thumb, 0, 0, $thumb_width, $thumb_height, $bg );
+		$bg = imagecolorallocate($thumb, 255, 255, 255);
+		// imagefill($thumb, 0, 0, $bg);
+		imagefilledrectangle($thumb, 0, 0, $thumb_width, $thumb_height, $bg);
 
 		// Respect Transparency
-		if( $this->_preserve_transparency && $this->_output_format != 'jpg' )
-		{
+		if ($this->_preserve_transparency && $this->_output_format != 'jpg') {
 			// Ignore Filled Color, Make it transparent
-			imagealphablending( $thumb, false );
-			imagesavealpha( $thumb, true );
+			imagealphablending($thumb, false);
+			imagesavealpha($thumb, true);
 		}
 
 
@@ -176,8 +175,7 @@ class Image
 		# Compare Source Image aspect with Thumb aspect
 		# to see how the crop will be if it exists
 
-		if( $this->_image_info['aspect'] > $thumb_aspect )
-		{
+		if ($this->_image_info['aspect'] > $thumb_aspect) {
 			# That's Means:
 			# Source image Width will be greater than thumb width
 			# the crop will happen on source image width
@@ -204,7 +202,7 @@ class Image
 			# 	 the cropped value will be the difference between the new source imaginary width and thumb width devided by the scale value
 			# 	 to get the correct value as source image pixels are scaled
 
-			# 	$croped_value = ( $source_imaginary_new_size['width'] - $thumb_width ) / $scale;
+			# 	$croped_value = ($source_imaginary_new_size['width'] - $thumb_width) / $scale;
 
 			# 	so we can get the crop position, it will start from the half value of the $crop_value, to center thumb scene
 			# 	that's mean that thumb will trim the value of  ' $croped_value / 2 ' from both sides
@@ -212,11 +210,9 @@ class Image
 			# 	since height will not changes so the start position will be 0
 			# 	and we can write the copying position
 
-			$copying_position = array( ( $source_imaginary_new_size['width'] - $thumb_width ) / $scale / 2 , 0 );
+			$copying_position = array(($source_imaginary_new_size['width'] - $thumb_width) / $scale / 2 , 0);
 
-		}
-		else if( $this->_image_info['aspect'] < $thumb_aspect )
-		{
+		} else if ($this->_image_info['aspect'] < $thumb_aspect) {
 			# That's Means:
 			# Source image Height will be greater than thumb height
 			# the crop will happen on source image height
@@ -237,11 +233,9 @@ class Image
 			# -- Calculate copying Positions
 			# 	width_start_position  = 0, as no crop will happens on width
 			# 	height_start_position = ($source_imaginary_new_size['height'] - $thumb_height) / $scale / 2;
-			$copying_position = array( 0, ( $source_imaginary_new_size['height'] - $thumb_height ) / $scale / 2 );
+			$copying_position = array(0, ($source_imaginary_new_size['height'] - $thumb_height) / $scale / 2);
 
-		}
-		else
-		{
+		} else {
 			# here there will be no crops as thumb is resized version of source image
 			# so,
 			# 	source_imaginary_new_size will be the same thumb dimensions
@@ -251,10 +245,8 @@ class Image
 				);
 
 			# Copying position will be 0, 0 as no crops happens
-			$copying_position = array( 0, 0 );
-
+			$copying_position = array(0, 0);
 		}
-
 
 		# --4
 		# 	Copy to thumb resource ($thumb) from source resource ($this->_image_resource) , with defining copying parameters
@@ -278,12 +270,12 @@ class Image
 
 		# Update _image_info_basic and important data that might be used in later calculations
 
-		$this->_image_info[ 0 ] = $thumb_width;
-		$this->_image_info[ 1 ] = $thumb_height;
-		$this->_image_info[ 3 ] = 'width="' . $thumb_width . '" height="' . $thumb_height . '"';
-		$this->_image_info[ 'aspect' ] = $thumb_aspect;
+		$this->_image_info[0] = $thumb_width;
+		$this->_image_info[1] = $thumb_height;
+		$this->_image_info[3] = 'width="' . $thumb_width . '" height="' . $thumb_height . '"';
+		$this->_image_info['aspect'] = $thumb_aspect;
 
-		unset( $thumb );
+		unset($thumb);
 
 		// allow Chaining
 		return $this;
@@ -298,26 +290,27 @@ class Image
 	 * @param String  $file_name saving file name
 	 * @param String  $directory directory to save into
 	 */
-	public function setSaveOptions( $file_name = null, $directory = null, $suffix = null )
-	{
+	public function setSaveOptions($file_name = null, $directory = null, $suffix = null) {
 		# Set Directory, or use Old if setted before from instance, or use img src directory
-		if( $directory )
-			$this->_save_dir = rtrim( $directory, DIRECTORY_SEPARATOR );
-		else if( !$this->_save_dir )
+		if ($directory) {
+			$this->_save_dir = rtrim($directory, DIRECTORY_SEPARATOR);
+		} else if (!$this->_save_dir) {
 			$this->_save_dir = $this->_image_info['dirname'];
+		}
 
 		// Check Directory
-		if( !is_dir( $directory ) )
-			mkdir( $directory, 0755, true );
-
-		else if( !is_writable( $directory ) )
-			chmod( $directory, 0755 );
+		if (!is_dir($directory)) {
+			mkdir($directory, 0755, true);
+		} else if (!is_writable($directory)) {
+			chmod($directory, 0755);
+		}
 
 		# Set Filename
-		if( $file_name )
-			$this->_save_name = basename( $file_name, '.' . pathinfo( $file_name, PATHINFO_EXTENSION ) ) . $suffix . '.' . $this->_output_format;
-		else if( !$this->_save_name )
+		if ($file_name) {
+			$this->_save_name = basename($file_name, '.' . pathinfo($file_name, PATHINFO_EXTENSION)) . $suffix . '.' . $this->_output_format;
+		} else if (!$this->_save_name) {
 			$this->_save_name = $this->_image_info['filename'] . $suffix . '.' . $this->_output_format;
+		}
 
 
 		$this->_save_path = $this->_save_dir . DIRECTORY_SEPARATOR . $this->_save_name;
@@ -331,20 +324,16 @@ class Image
 	 * Setting Output Format
 	 * @param String $format png, jpeg, jpg OR gif
 	 */
-	public function setOutputFormat( $format = null, $quality = null, $filters = null )
-	{
+	public function setOutputFormat($format = null, $quality = null, $filters = null) {
 
-		if( $format )
-		{
-			$format = strtolower( $format );
+		if ($format) {
+			$format = strtolower($format);
 
-			if( in_array( $format, static::$_allowed_formates ) )
-			{
+			if (in_array($format, static::$_allowed_formates)) {
 				$this->_output_format = $format;
 
 				# fix file extension if this method was called after calling setSaveOptions Method
-				if( $this->_save_path )
-				{
+				if ($this->_save_path) {
 					$this->_save_name = preg_replace(
 						'/(?<=\.)(?:png|jpeg|jpg|gif)$/i',
 						$this->_output_format,
@@ -352,60 +341,52 @@ class Image
 					);
 
 					$this->_save_path = $this->_save_dir . DIRECTORY_SEPARATOR . $this->_save_name;
-
 				}
-
 			}
-
 		}
 
 		// Quality
 		$this->_output_options = [];
-		if( is_numeric( $quality ) )
-		{
-			// if( $format == 'jpg' || $format == 'jpeg' )
+		if (is_numeric($quality)) {
+			// if($format == 'jpg' || $format == 'jpeg')
 			// {
-			// 	if( $quality < 0 || $quality > 100 )
-			// 		throw new ImageException( __METHOD__ . ' ' . $format . ' quality must be between 0-100' );
+			// 	if($quality < 0 || $quality > 100)
+			// 		throw new ImageException(__METHOD__ . ' ' . $format . ' quality must be between 0-100');
 			// }
-			// else if( $format == 'png' )
+			// else if($format == 'png')
 			// {
-			// 	if( $quality < 0 || $quality > 9 )
-			// 		throw new ImageException( __METHOD__ . ' ' . $format . ' quality must be between 0-9' );
+			// 	if($quality < 0 || $quality > 9)
+			// 		throw new ImageException(__METHOD__ . ' ' . $format . ' quality must be between 0-9');
 			// }
 			
-			if( $this->_output_format == 'jpg' || $this->_output_format == 'jpeg' )
-				$quality = round( $quality * 100 / 100 );
-			else if( $this->_output_format == 'png' )
-				$quality = round( $quality * 9 / 100 );
-
-			// dd( $quality );
+			if ($this->_output_format == 'jpg' || $this->_output_format == 'jpeg') {
+				$quality = round($quality * 100 / 100);
+			} else if ($this->_output_format == 'png') {
+				$quality = round($quality * 9 / 100);
+			}
 
 			$this->_output_options[] = $quality;
 		}
 
 		// Filters
-		if( $filters !== null )
-		{
+		if ($filters !== null) {
 			// Filters must come after quality
-			if( empty( $this->_output_options ) )
+			if (empty($this->_output_options)) {
 				$this->_output_options[] = null;
+			}
 
 			$this->_output_options[] = $filters;
 		}
 
 		return $this;
-
-		# Method End
 	}
 
 	/**
 	 * Aliase For exportImage() Method
 	 * @return Boolean indicates to success or fail
 	 */
-	public function export( $keep_resource = false )
-	{
-		return $this->exportImage( $keep_resource );
+	public function export($keep_resource = false) {
+		return $this->exportImage($keep_resource);
 	}
 
 	/**
@@ -413,70 +394,69 @@ class Image
 	 * @return Boolean indicates to success or fail
 	 * @param  $keep_resource  Boolean  If To Not Destroy Resource After Exporting, Useful If Weneed to continue on image resource
 	 */
-	public function exportImage( $keep_resource = false )
-	{
+	public function exportImage($keep_resource = false) {
 
 		# export current resource image
-		array_unshift( $this->_output_options, $this->_image_resource, $this->_save_path );
+		array_unshift($this->_output_options, $this->_image_resource, $this->_save_path);
 
-		switch( $this->_output_format )
-		{
+		switch($this->_output_format) {
 			case 'jpeg' :
 			case 'jpg'  :
-				if( !$this->_save_path )
-					header( 'content-type: image/jpeg' );
+				if (!$this->_save_path) {
+					header('content-type: image/jpeg');
+				}
 
-				$result = call_user_func_array( 'imagejpeg',  $this->_output_options );
+				$result = call_user_func_array('imagejpeg',  $this->_output_options);
 				break;
 
 			case 'png' :
-				if( !$this->_save_path )
-					header( 'content-type: image/png' );
+				if (!$this->_save_path) {
+					header('content-type: image/png');
+				}
 
-				$result = call_user_func_array( 'imagepng',  $this->_output_options );
+				$result = call_user_func_array('imagepng',  $this->_output_options);
 				break;
 
 			case 'gif' :
-				if( !$this->_save_path )
-					header( 'content-type: image/gif' );
+				if (!$this->_save_path) {
+					header('content-type: image/gif');
+				}
 
-				$result = call_user_func_array( 'imagegif',  $this->_output_options );
+				$result = call_user_func_array('imagegif',  $this->_output_options);
 				break;
 		}
 
 		// Reset output_options
-		unset( $this->_output_options[0], $this->_output_options[1] );
-		$this->_output_options = array_values( $this->_output_options );
+		unset($this->_output_options[0], $this->_output_options[1]);
+		$this->_output_options = array_values($this->_output_options);
 
 		// Destroy Image
-		if( $keep_resource === false )
-		{
+		if ($keep_resource === false) {
 			$this->destroy();
 		}
 
 		// Exit incase of exporting to browser
-		if ( !$this->_save_path )
+		if (!$this->_save_path) {
 			exit;
+		}
 
-		return ( $result ) ? ( $this->_save_name  ? $this->_save_name : true ) : false;
+		return ($result) ? ($this->_save_name  ? $this->_save_name : true) : false;
 		# Method End
 	}
 
-	public function embed( $keep_resource = false  )
-	{
+	public function embed($keep_resource = false) {
 		ob_start();
 
-			switch( $this->_output_format )
-			{
+			switch ($this->_output_format) {
 				case 'jpeg' :
 				case 'jpg'  :
-					imagejpeg( $this->_image_resource );
+					imagejpeg($this->_image_resource);
 					break;
 				case 'png':
-					imagepng( $this->_image_resource );
+					imagepng($this->_image_resource);
 					break;
 				case 'gif':
-					imagegif( $this->_image_resource );
+					imagegif($this->_image_resource);
 					break;
 			}
 
@@ -484,18 +464,18 @@ class Image
 
 		ob_end_clean();
 
-		if( !$keep_resource )
-			imagedestroy( $this->_image_resource );
+		if (!$keep_resource) {
+			imagedestroy($this->_image_resource);
+		}
 
-		return 'data:image/' . $this->_output_format . ';base64,' . base64_encode( $str );
+		return 'data:image/' . $this->_output_format . ';base64,' . base64_encode($str);
 	}
 
 	/**
 	 * Destroy Image Resource
 	 */
-	public function destroy()
-	{
-		imagedestroy( $this->_image_resource );
+	public function destroy() {
+		imagedestroy($this->_image_resource);
 	}
 
 
@@ -504,9 +484,8 @@ class Image
 	/********************************************************************/
 
 
-	public function __toString()
-	{
-		//While Using Object as string Like: echoing, returning assigning... we export it
+	public function __toString() {
+		// While Using Object as string Like: echoing, returning assigning... we export it
 		return $this->exportImage();
 	}
 
@@ -524,56 +503,59 @@ class Image
 	 * @param  integer $range Range to randomize given values
 	 * @return array        array of randomized rgb
 	 */
-	protected function getRGBFromRange( $r, $g, $b, $range )
-	{
+	protected function getRGBFromRange($r, $g, $b, $range) {
 		#	get randomized rgb values on a specific range from a agiven value
 
-		if( !$range )
-			return array( $r, $g, $b );
+		if (!$range) {
+			return array($r, $g, $b);
+		}
 
-
-		$range = round( $range / 2 );
+		$range = round($range / 2);
 		$color = array();
 
 		# red
 		$min = $r - $range;
 		$max = $r + $range;
 
-		if( $min < 0 )
+		if ($min < 0) {
 			$min = 0;
+		}
 
-		if( $max > 255 )
+		if ($max > 255) {
 			$max = 255;
+		}
 
-		$color['r'] = $color[0] = rand( $min, $max );
+		$color['r'] = $color[0] = rand($min, $max);
 
 		# Green
 		$min = $g - $range;
 		$max = $g + $range;
 
-		if( $min < 0 )
+		if ($min < 0) {
 			$min = 0;
+		}
 
-		if( $max > 255 )
+		if ($max > 255) {
 			$max = 255;
+		}
 
-		$color['g'] = $color[1] = rand( $min, $max );
+		$color['g'] = $color[1] = rand($min, $max);
 
 		# blue
 		$min = $b - $range;
 		$max = $b + $range;
 
-		if( $min < 0 )
+		if ($min < 0) {
 			$min = 0;
+		}
 
-		if( $max > 255 )
+		if ($max > 255) {
 			$max = 255;
+		}
 
-		$color['b'] = $color[2] = rand( $min, $max );
+		$color['b'] = $color[2] = rand($min, $max);
 
 		return $color;
-
-		# Method End
 	}
 
 
@@ -587,22 +569,18 @@ class Image
 	 * @param  string $font         font file
 	 * @return String               Font Full Path
 	 */
-	protected function getFontFilePath( $font = null, $custom_key = null )
-	{
+	protected function getFontFilePath($font = null, $custom_key = null) {
 
 		// Get Calling Class Name
-		$cls = $custom_key ? $custom_key : strtolower( str_replace( __NAMESPACE__.'\\', '', get_called_class() ) );
+		$cls = $custom_key ? $custom_key : strtolower(str_replace(__NAMESPACE__.'\\', '', get_called_class()));
 
-
-		$font_path = Config::get( self::PACKAGE_NAME . '.font_dir' ) . DIRECTORY_SEPARATOR;
-
+		$font_path = Config::get(self::PACKAGE_NAME . '.font_dir') . DIRECTORY_SEPARATOR;
 
 		// Check if has Sub Directory
-		$font_path .= Config::get( self::PACKAGE_NAME . '.'.$cls.'.font_dir' ) ?  Config::get( self::PACKAGE_NAME . '.'.$cls.'.font_dir' ) . DIRECTORY_SEPARATOR : '';
+		$font_path .= Config::get(self::PACKAGE_NAME . '.'.$cls.'.font_dir') ?  Config::get(self::PACKAGE_NAME . '.'.$cls.'.font_dir') . DIRECTORY_SEPARATOR : '';
 
 		// $font OR Default
-		$font_path .= ( $font ) ? $font : Config::get( self::PACKAGE_NAME . '.'.$cls.'.font' );
-
+		$font_path .= ($font) ? $font : Config::get(self::PACKAGE_NAME . '.'.$cls.'.font');
 
 		return $font_path;
 	}
@@ -621,8 +599,7 @@ class Image
 	 * @param  string $text         text string
 	 * @return array                array of box information like width, height and corner points array
 	 */
-	protected function getTextBoxDimensions( $font_size, $text_angle, $font, $text )
-	{
+	protected function getTextBoxDimensions($font_size, $text_angle, $font, $text) {
 		#	comment
 
 		$dimensions = imagettfbbox(
@@ -630,50 +607,39 @@ class Image
 			$text_angle,
 			$font,
 			$text
-			);
+		);
 
 		$arr = array(
-
-			'width' =>  max( abs( $dimensions[4] - $dimensions[0] ), abs( $dimensions[6] - $dimensions[2] ) ),
-			'height'=>  max( abs( $dimensions[5] - $dimensions[1] ), abs( $dimensions[7] - $dimensions[3] ) ),
-
+			'width' =>  max(abs($dimensions[4] - $dimensions[0]), abs($dimensions[6] - $dimensions[2])),
+			'height'=>  max(abs($dimensions[5] - $dimensions[1]), abs($dimensions[7] - $dimensions[3])),
 			'points'=>  $dimensions,
-			);
+		);
 
 
-		$arr[ 'draw_y_center' ] = $arr['height'] / 2;
+		$arr['draw_y_center'] = $arr['height'] / 2;
 
-		if( $text_angle % 180 == 0 )
-		{
+		if ($text_angle % 180 == 0) {
 			// Horizontal Typed, angle = 0, 180
-			$arr['real_width'] = ( abs( $dimensions[2] - $dimensions[0] ) + abs( $dimensions[4] - $dimensions[6] ) ) / 2;
-
-			$arr['real_height'] = ( abs( $dimensions[3] - $dimensions[5] ) + abs( $dimensions[1] - $dimensions[7] ) ) / 2;
-
-		}
-		else if( $text_angle % 90 == 0 )
-		{
+			$arr['real_width'] = (abs($dimensions[2] - $dimensions[0]) + abs($dimensions[4] - $dimensions[6])) / 2;
+			$arr['real_height'] = (abs($dimensions[3] - $dimensions[5]) + abs($dimensions[1] - $dimensions[7])) / 2;
+		} else if ($text_angle % 90 == 0) {
 			// Vertically
-			$arr['real_width'] = ( abs( $dimensions[0] - $dimensions[6] ) + abs( $dimensions[2] - $dimensions[4] ) ) / 2;
-
-			$arr['real_height'] = ( abs( $dimensions[1] - $dimensions[3] ) + abs( $dimensions[7] - $dimensions[5] ) ) / 2;
-
-		}
-		else
-		{
+			$arr['real_width'] = (abs($dimensions[0] - $dimensions[6]) + abs($dimensions[2] - $dimensions[4])) / 2;
+			$arr['real_height'] = (abs($dimensions[1] - $dimensions[3]) + abs($dimensions[7] - $dimensions[5])) / 2;
+		} else {
 			// Rotated by angle
 
 			// Point Related Calculations, From Triangle Fethaghorth
 
 			// Height dx and dy
-			$Hdx = abs( $dimensions[6] - $dimensions[0] );
-			$Hdy = abs( $dimensions[7] - $dimensions[1] );
-			$H = round( sqrt( $Hdx ** 2  +  $Hdy ** 2 ) );
+			$Hdx = abs($dimensions[6] - $dimensions[0]);
+			$Hdy = abs($dimensions[7] - $dimensions[1]);
+			$H = round(sqrt($Hdx ** 2  +  $Hdy ** 2));
 
 			// Width dx and dy
-			$Wdx = abs( $dimensions[6] - $dimensions[4] );
-			$Wdy = abs( $dimensions[7] - $dimensions[5] );
-			$W = round( sqrt( $Wdx ** 2  +  $Wdy ** 2 ) );
+			$Wdx = abs($dimensions[6] - $dimensions[4]);
+			$Wdy = abs($dimensions[7] - $dimensions[5]);
+			$W = round(sqrt($Wdx ** 2  +  $Wdy ** 2));
 
 			$arr['real_width'] = $W;
 			$arr['real_height'] = $H;
@@ -685,70 +651,64 @@ class Image
 		}
 
 		// Calculate Offsets according to rotation angle
-		switch( true )
-		{
-			case ( $text_angle == 0 ):
+		switch(true) {
+			case ($text_angle == 0):
 				// 0
-				$arr[ 'offset_x' ] = 0;
-				$arr[ 'offset_y' ] = 0;
+				$arr['offset_x'] = 0;
+				$arr['offset_y'] = 0;
 				break;
 
-			case ( $text_angle < 90 ):
+			case ($text_angle < 90):
 				// 1 - 89
-				$arr[ 'offset_x' ] = $Hdx;
-				$arr[ 'offset_y' ] = 0;
+				$arr['offset_x'] = $Hdx;
+				$arr['offset_y'] = 0;
 				break;
 
-			case ( $text_angle == 90 ):
+			case ($text_angle == 90):
 				// 90
-				$arr[ 'offset_x' ] = $arr[ 'width' ];
-				$arr[ 'offset_y' ] = 0;
+				$arr['offset_x'] = $arr['width'];
+				$arr['offset_y'] = 0;
 				break;
 
-			case ( $text_angle < 180 ):
+			case ($text_angle < 180):
 				// 91 - 179
-				$arr[ 'offset_x' ] = $arr[ 'width' ];
-				$arr[ 'offset_y' ] = $Hdy;
+				$arr['offset_x'] = $arr['width'];
+				$arr['offset_y'] = $Hdy;
 				break;
 
-			case ( $text_angle == 180 ):
+			case ($text_angle == 180):
 				// 180
-				$arr[ 'offset_x' ] = $arr[ 'width' ];
-				$arr[ 'offset_y' ] = $arr[ 'height' ];
+				$arr['offset_x'] = $arr['width'];
+				$arr['offset_y'] = $arr['height'];
 				break;
 
-			case ( $text_angle < 270 ):
+			case ($text_angle < 270):
 				// 181 - 269
-				$arr[ 'offset_x' ] = $arr[ 'width' ] - $Hdx;
-				$arr[ 'offset_y' ] = $arr[ 'height' ];
+				$arr['offset_x'] = $arr['width'] - $Hdx;
+				$arr['offset_y'] = $arr['height'];
 				break;
 
-			case ( $text_angle == 270 ):
+			case ($text_angle == 270):
 				// 270
-				$arr[ 'offset_x' ] = 0;
-				$arr[ 'offset_y' ] = $arr[ 'height' ];
+				$arr['offset_x'] = 0;
+				$arr['offset_y'] = $arr['height'];
 				break;
 
-			case ( $text_angle < 360 ):
+			case ($text_angle < 360):
 				// 271 - 359
-				$arr[ 'offset_x' ] = 0;
-				$arr[ 'offset_y' ] = $arr[ 'height' ] - $Hdy;
+				$arr['offset_x'] = 0;
+				$arr['offset_y'] = $arr['height'] - $Hdy;
 				break;
-
 		}
 
-
 		return $arr;
-
-
-	} # Method End
+	}
 
 	/**
 	 * Disable Transparency
 	 * @return App\Services\Image instance
 	 */
-	public function noTransparency()
-	{
+	public function noTransparency() {
 		$this->_preserve_transparency = false;
 		return $this;
 	}
@@ -757,8 +717,7 @@ class Image
 	 * Enable Transparency
 	 * @return App\Services\Image instance
 	 */
-	public function forceTransparency()
-	{
+	public function forceTransparency() {
 		$this->_preserve_transparency = true;
 		return $this;
 	}
@@ -768,15 +727,11 @@ class Image
 	 *
 	 * @return App\Services\Image instance
 	 */
-	public function setStatusCode( $code = 200, $message = 'OK' )
-	{
+	public function setStatusCode($code = 200, $message = 'OK') {
 		// Set Header
-		header( $_SERVER[ 'SERVER_PROTOCOL'] . ' ' . $code . ' ' . $message );
+		header($_SERVER['SERVER_PROTOCOL'] . ' ' . $code . ' ' . $message);
 
 		// Allow Method Chaining
 		return $this;
 	}
-
 }
-
-?>
