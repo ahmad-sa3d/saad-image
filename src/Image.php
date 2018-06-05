@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Config;
 use Saad\Image\Traits\CopyrightTrait;
 
 /**
-* Deal With Images
-*/
+ * Deal With Images
+ */
 class Image
 {
 
@@ -18,6 +18,7 @@ class Image
 	protected $_image_src;
 	protected $_image_info;
 	protected $_image_resource;			# binary
+	protected $_image_resource_backup;			# binary
 
 	protected $_preserve_transparency = false;
 
@@ -242,7 +243,7 @@ class Image
 			$source_imaginary_new_size = array(
 				'width' => $thumb_width,
 				'height' => $thumb_height
-				);
+			);
 
 			# Copying position will be 0, 0 as no crops happens
 			$copying_position = array(0, 0);
@@ -252,28 +253,24 @@ class Image
 		# 	Copy to thumb resource ($thumb) from source resource ($this->_image_resource) , with defining copying parameters
 		#
 		imagecopyresampled(
-				$thumb,										#	copy into
-				$this->_image_resource,						#	from
-				0,											#	copy into at x
-				0,											#	copy into at y
-				$copying_position[0],						#	from at x
-				$copying_position[1],						# 	from at y
-				$source_imaginary_new_size['width'],		#	from resampled width
-				$source_imaginary_new_size['height'],		#	from resampled height
-				$this->_image_info[0],						#	from original width
-				$this->_image_info[1]						#	from original height
-			);
+			$thumb,										#	copy into
+			$this->_image_resource,						#	from
+			0,											#	copy into at x
+			0,											#	copy into at y
+			$copying_position[0],						#	from at x
+			$copying_position[1],						# 	from at y
+			$source_imaginary_new_size['width'],		#	from resampled width
+			$source_imaginary_new_size['height'],		#	from resampled height
+			$this->_image_info[0],						#	from original width
+			$this->_image_info[1]						#	from original height
+		);
 
 
 		# --5 Set new thumb as _image_resource for saving or exporting
 		$this->_image_resource = $thumb;
 
 		# Update _image_info_basic and important data that might be used in later calculations
-
-		$this->_image_info[0] = $thumb_width;
-		$this->_image_info[1] = $thumb_height;
-		$this->_image_info[3] = 'width="' . $thumb_width . '" height="' . $thumb_height . '"';
-		$this->_image_info['aspect'] = $thumb_aspect;
+		$this->updateImageInfo($thumb_width, $thumb_height);
 
 		unset($thumb);
 
@@ -282,8 +279,6 @@ class Image
 
 		# Method End
 	}
-
-
 
 	/**
 	 * Set Saving Options
@@ -358,7 +353,7 @@ class Image
 			// 	if($quality < 0 || $quality > 9)
 			// 		throw new ImageException(__METHOD__ . ' ' . $format . ' quality must be between 0-9');
 			// }
-			
+
 			if ($this->_output_format == 'jpg' || $this->_output_format == 'jpeg') {
 				$quality = round($quality * 100 / 100);
 			} else if ($this->_output_format == 'png') {
@@ -444,23 +439,29 @@ class Image
 		# Method End
 	}
 
+	/**
+	 * Get Image as embeded code
+	 *
+	 * @param bool $keep_resource
+	 * @return string
+	 */
 	public function embed($keep_resource = false) {
 		ob_start();
 
-			switch ($this->_output_format) {
-				case 'jpeg' :
-				case 'jpg'  :
-					imagejpeg($this->_image_resource);
-					break;
-				case 'png':
-					imagepng($this->_image_resource);
-					break;
-				case 'gif':
-					imagegif($this->_image_resource);
-					break;
-			}
+		switch ($this->_output_format) {
+			case 'jpeg' :
+			case 'jpg'  :
+				imagejpeg($this->_image_resource);
+				break;
+			case 'png':
+				imagepng($this->_image_resource);
+				break;
+			case 'gif':
+				imagegif($this->_image_resource);
+				break;
+		}
 
-			$str = ob_get_contents();
+		$str = ob_get_contents();
 
 		ob_end_clean();
 
@@ -478,6 +479,60 @@ class Image
 		imagedestroy($this->_image_resource);
 	}
 
+	/**
+	 * Disable Transparency
+	 * @return App\Services\Image instance
+	 */
+	public function noTransparency() {
+		$this->_preserve_transparency = false;
+		return $this;
+	}
+
+	/**
+	 * Enable Transparency
+	 * @return App\Services\Image instance
+	 */
+	public function forceTransparency() {
+		$this->_preserve_transparency = true;
+		return $this;
+	}
+
+	/**
+	 * Set Status Code Header
+	 *
+	 * @return App\Services\Image instance
+	 */
+	public function setStatusCode($code = 200, $message = 'OK') {
+		// Set Header
+		header($_SERVER['SERVER_PROTOCOL'] . ' ' . $code . ' ' . $message);
+
+		// Allow Method Chaining
+		return $this;
+	}
+
+	/**
+	 * Backup Image resource
+	 */
+	public function backup() {
+		$this->_image_resource_backup = $this->cloneResource($this->_image_resource)['resource'];
+		return $this;
+	}
+
+	/**
+	 * Restore Image resource from backup
+	 */
+	public function reset() {
+		if (!$this->_image_resource_backup) {
+			throw new ImageException('Cannot restore, no backup has been taken for image resource');
+		}
+
+		$cloned = $this->cloneResource($this->_image_resource_backup);
+
+		$this->_image_resource = $cloned['resource'];
+		$this->updateImageInfo($cloned['width'], $cloned['height']);
+		return $this;
+	}
+
 
 	/********************************************************************/
 	/*							Magic Method							*/
@@ -493,6 +548,19 @@ class Image
 	/********************************************************************/
 	/*							Helper Method							*/
 	/********************************************************************/
+
+	/**
+	 * Update Image Resource Info
+	 *
+	 * @param $width
+	 * @param $height
+	 */
+	private function updateImageInfo($width, $height) {
+		$this->_image_info[0] = $width;
+		$this->_image_info[1] = $height;
+		$this->_image_info[3] = 'width="' . $width . '" height="' . $height . '"';
+		$this->_image_info['aspect'] = $width / $height;
+	}
 
 
 	/**
@@ -705,33 +773,45 @@ class Image
 	}
 
 	/**
-	 * Disable Transparency
-	 * @return App\Services\Image instance
-	 */
-	public function noTransparency() {
-		$this->_preserve_transparency = false;
-		return $this;
-	}
-
-	/**
-	 * Enable Transparency
-	 * @return App\Services\Image instance
-	 */
-	public function forceTransparency() {
-		$this->_preserve_transparency = true;
-		return $this;
-	}
-
-	/**
-	 * Set Status Code Header
+	 * Clone Image Resource
 	 *
-	 * @return App\Services\Image instance
+	 * @param $resource
+	 * @return array
 	 */
-	public function setStatusCode($code = 200, $message = 'OK') {
-		// Set Header
-		header($_SERVER['SERVER_PROTOCOL'] . ' ' . $code . ' ' . $message);
+	private function cloneResource($resource) {
+		// Get width from image.
+		$w = imagesx($resource);
+		// Get height from image.
+		$h = imagesy($resource);
+		// Get the transparent color from a 256 palette image.
+		$trans = imagecolortransparent($resource);
 
-		// Allow Method Chaining
-		return $this;
+		if (imageistruecolor($resource)) {
+			// this is a true color image...
+			$clone = imagecreatetruecolor($w, $h);
+			imagealphablending($clone, false);
+			imagesavealpha($clone, true);
+		} else {
+			// this is a 256 color palette image...
+			$clone = imagecreate($w, $h);
+
+			// If the image has transparency...
+			if ($trans >= 0) {
+				$rgb = imagecolorsforindex($resource, $trans);
+				imagesavealpha($clone, true);
+				$trans_index = imagecolorallocatealpha($clone, $rgb['red'], $rgb['green'], $rgb['blue'], $rgb['alpha']);
+				imagefill($clone, 0, 0, $trans_index);
+			}
+		}
+
+		// Create the Clone!!
+		imagecopy($clone, $resource, 0, 0, 0, 0, $w, $h);
+
+		return [
+			'resource' => $clone,
+			'width' => $w,
+			'height' => $h,
+		];
 	}
+
 }
