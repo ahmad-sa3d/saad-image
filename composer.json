@@ -12,11 +12,12 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=7.0.0",
+        "ext-gd": "*"
     },
     "autoload": {
         "psr-4": {
-            "Saad\\Image\\": "src"
+            "Saad\\Image\\": "src/"
         }
     },
     "extra": {

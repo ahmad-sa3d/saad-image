@@ -1,8 +1,9 @@
-<?php 
+<?php
 
 namespace Saad\Image\Exceptions;
 
 use \Exception;
+use Saad\Image\Captcha\Captcha;
 
 class CaptchaException extends Exception{
 

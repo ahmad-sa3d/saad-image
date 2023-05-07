@@ -1,7 +1,7 @@
 <?php
 namespace Saad\Image\Exceptions;
 
-class NotSupportedImageFormatException
+class NotSupportedImageFormatException extends \Exception
 {
     public function __construct( $message = null )
     {

@@ -2,7 +2,7 @@
 
 namespace Saad\Image;
 
-use Exceptions\ImageException;
+use Saad\Image\Exceptions\ImageException;
 use Illuminate\Support\Facades\Config;
 use Saad\Image\Traits\CopyrightTrait;
 
@@ -40,10 +40,11 @@ class Image
 
 	// There Will be auto generated Properties According to Each Method needs
 
-	/**
-	 * Create Binary 'Resource' image from image file path
-	 * @param string $image_src source 'image file path'
-	 */
+    /**
+     * @param $image_src
+     * @param $fallback_extension
+     * @throws ImageException
+     */
 	public function __construct($image_src = null, $fallback_extension = null)
 	{
 		# code...
@@ -51,7 +52,7 @@ class Image
 			throw new ImageException('__Construct() requires one argument to be an image file path.');
 		}
 
-		// Set File Fortmates
+		// Set File Formats
 		if (! static::$_allowed_formates) {
 			static::$_allowed_formates = Config::get(self::PACKAGE_NAME . '.image.formates');
 		}
@@ -61,7 +62,7 @@ class Image
 
 		$this->_image_info = array_merge($this->_image_info, pathinfo($this->_image_src));
 
-		# get orginal extension from mime
+		# get original extension from mime
 		$this->_image_info['mime_extension'] = str_replace('image/', '', $this->_image_info['mime']);
 
 		# And Set default output format
@@ -98,7 +99,7 @@ class Image
 
 			default:
 				// throw new ImageException("Couldn't identify image mime-type OR image mime-type not supported" );
-				# Set Error Beeter than Imageexception
+				# Set Error Beter than Image exception
 				$this->error[] = "Couldn't identify image mime-type '{$this->_image_info['mime']}' OR image mime-type not supported.";
 				return false;
 		}
@@ -107,20 +108,21 @@ class Image
 		imagealphablending($this->_image_resource, false);
 		imagesavealpha($this->_image_resource, true);
 
-		# Set Error in case of failing to create a resource'Binary' from sorce image
+		# Set Error in case of failing to create a resource 'Binary' from source image
 		if (!$this->_image_resource) {
 			$this->error[] = "Couldn't create image resource.";
 		}
 
 	}
 
-	/**
-	 * Create Thumbnail Or Resize Image
-	 * @param  number  $thumb_width     new width
-	 * @param  number  $thumb_height    new height
-	 * @param  boolean $preserve_aspect get neglected dimension according to originel aspect or set it as the other given dimension
-	 * @return object                   current instance to allow chaining
-	 */
+    /**
+     * Create Thumbnail Or Resize Image
+     * @param null $thumb_width new width
+     * @param null $thumb_height new height
+     * @param boolean $preserve_aspect get neglected dimension according to original aspect or set it as the other given dimension
+     * @return object                   current instance to allow chaining
+     * @throws ImageException
+     */
 	public function createThumbnail($thumb_width = null, $thumb_height = null, $preserve_aspect = false) {
 		if ((is_numeric($thumb_width) && $thumb_width <= 0) || (is_numeric($thumb_height) && $thumb_height <= 0)) {
 			throw new ImageException(__METHOD__ . ' require width or height to be non negative numbers or zero.');
@@ -132,7 +134,7 @@ class Image
 
 
 		# -1
-		# Get aspect ratio for both Orginal Source and Thumb
+		# Get aspect ratio for both Original Source and Thumb
 		# to determine if there will be crop and if, how it will be
 		# Aspect = Width / Height
 		# So We Deduces:
@@ -320,7 +322,6 @@ class Image
 	 * @param String $format png, jpeg, jpg OR gif
 	 */
 	public function setOutputFormat($format = null, $quality = null, $filters = null) {
-
 		if ($format) {
 			$format = strtolower($format);
 
@@ -343,17 +344,6 @@ class Image
 		// Quality
 		$this->_output_options = [];
 		if (is_numeric($quality)) {
-			// if($format == 'jpg' || $format == 'jpeg')
-			// {
-			// 	if($quality < 0 || $quality > 100)
-			// 		throw new ImageException(__METHOD__ . ' ' . $format . ' quality must be between 0-100');
-			// }
-			// else if($format == 'png')
-			// {
-			// 	if($quality < 0 || $quality > 9)
-			// 		throw new ImageException(__METHOD__ . ' ' . $format . ' quality must be between 0-9');
-			// }
-
 			if ($this->_output_format == 'jpg' || $this->_output_format == 'jpeg') {
 				$quality = round($quality * 100 / 100);
 			} else if ($this->_output_format == 'png') {
@@ -364,7 +354,7 @@ class Image
 		}
 
 		// Filters
-		if ($filters !== null) {
+		if ($filters !== null && $format == 'png') {
 			// Filters must come after quality
 			if (empty($this->_output_options)) {
 				$this->_output_options[] = null;
@@ -539,7 +529,8 @@ class Image
 	/********************************************************************/
 
 
-	public function __toString() {
+	public function __toString(): string
+    {
 		// While Using Object as string Like: echoing, returning assigning... we export it
 		return $this->exportImage();
 	}
